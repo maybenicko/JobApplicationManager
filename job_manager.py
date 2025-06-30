@@ -3,6 +3,7 @@ from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 
+
 class JobApplicationManager:
     FILENAME = "JobApplications.xlsx"
     COLUMNS = ["POSITION", "COMPANY", "LINK", "OUTCOME"]
@@ -37,10 +38,22 @@ class JobApplicationManager:
     def save_wb(self, wb):
         wb.save(self.FILENAME)
 
+    @staticmethod
+    def sort_by_company(ws):
+        rows = list(ws.iter_rows(min_row=2, max_col=4, values_only=True))
+        rows.sort(key=lambda row: str(row[1]).lower() if row[1] else "")
+
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row, max_col=4):
+            for cell in row:
+                cell.value = None
+
+        for i, row_data in enumerate(rows, start=2):
+            for j, value in enumerate(row_data, start=1):
+                ws.cell(row=i, column=j, value=value)
+
     def apply_formatting(self, ws):
         last_row = ws.max_row
 
-        # Format header row
         for col_idx, col_name in enumerate(self.COLUMNS, start=1):
             cell = ws.cell(row=1, column=col_idx)
             cell.value = col_name
@@ -49,14 +62,13 @@ class JobApplicationManager:
             cell.border = self.header_border
             cell.alignment = Alignment(horizontal='center', vertical='center')
 
-        # Format data rows
         for r in range(2, last_row + 1):
             for c in range(1, 5):
                 cell = ws.cell(row=r, column=c)
                 cell.border = self.data_border
-                if c == 3:  # LINK column
+                if c == 3:
                     cell.font = Font(bold=True)
-                elif c == 4:  # OUTCOME column
+                elif c == 4:
                     val = str(cell.value)
                     if val in self.outcome_styles:
                         style = self.outcome_styles[val]
@@ -85,6 +97,7 @@ class JobApplicationManager:
         ws.cell(row=row, column=3, value=formatted_link)
         ws.cell(row=row, column=4, value="Waiting")
 
+        self.sort_by_company(ws)
         self.apply_formatting(ws)
         self.save_wb(wb)
         print("✅ Job application added.\n")
@@ -128,6 +141,7 @@ class JobApplicationManager:
         wb, ws = self.load_ws()
         ws.cell(row=choice + 1, column=4, value=outcome)
 
+        self.sort_by_company(ws)
         self.apply_formatting(ws)
         self.save_wb(wb)
         print("✅ Outcome updated.\n")
