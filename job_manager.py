@@ -2,6 +2,7 @@ import os
 from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
+# pyinstaller --onefile job_manager.py
 
 
 class JobApplicationManager:
@@ -19,6 +20,7 @@ class JobApplicationManager:
         "Waiting": {"font": Font(color="0000FF"), "fill": PatternFill(start_color="DCE6F1", fill_type="solid")},
         "Rejected": {"font": Font(color="FF0000"), "fill": PatternFill(start_color="FADBD8", fill_type="solid")},
         "Accepted": {"font": Font(color="00AA00"), "fill": PatternFill(start_color="D5F5E3", fill_type="solid")},
+        "In Progress": {"font": Font(color="B8860B"), "fill": PatternFill(start_color="FFFACD", fill_type="solid")},
     }
 
     def __init__(self):
@@ -130,9 +132,10 @@ class JobApplicationManager:
         print("[1] Waiting")
         print("[2] Rejected")
         print("[3] Accepted")
+        print("[4] In Progress")
         opt = input("Choice: ")
 
-        mapping = {"1": "Waiting", "2": "Rejected", "3": "Accepted"}
+        mapping = {"1": "Waiting", "2": "Rejected", "3": "Accepted", "4": "In Progress"}
         outcome = mapping.get(opt)
         if not outcome:
             print("❌ Invalid outcome.\n")
