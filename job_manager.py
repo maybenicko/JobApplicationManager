@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter
 
 class JobApplicationManager:
     FILENAME = "JobApplications.xlsx"
-    COLUMNS = ["POSITION", "COMPANY", "LINK", "OUTCOME"]
+    COLUMNS = ["POSITION", "COMPANY", "CITY", "LINK", "OUTCOME"]
 
     header_fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
     header_font = Font(color="FFFFFF", bold=True)
@@ -42,10 +42,10 @@ class JobApplicationManager:
 
     @staticmethod
     def sort_by_company(ws):
-        rows = list(ws.iter_rows(min_row=2, max_col=4, values_only=True))
+        rows = list(ws.iter_rows(min_row=2, max_col=5, values_only=True))
         rows.sort(key=lambda row: str(row[1]).lower() if row[1] else "")
 
-        for row in ws.iter_rows(min_row=2, max_row=ws.max_row, max_col=4):
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row, max_col=5):
             for cell in row:
                 cell.value = None
 
@@ -56,6 +56,7 @@ class JobApplicationManager:
     def apply_formatting(self, ws):
         last_row = ws.max_row
 
+        # Header formatting
         for col_idx, col_name in enumerate(self.COLUMNS, start=1):
             cell = ws.cell(row=1, column=col_idx)
             cell.value = col_name
@@ -64,21 +65,26 @@ class JobApplicationManager:
             cell.border = self.header_border
             cell.alignment = Alignment(horizontal='center', vertical='center')
 
+        # Data formatting
         for r in range(2, last_row + 1):
-            for c in range(1, 5):
+            for c in range(1, 6):
                 cell = ws.cell(row=r, column=c)
                 cell.border = self.data_border
-                if c == 3:
+                if c == 4:  # Link column
                     cell.font = Font(bold=True)
-                elif c == 4:
+                elif c == 5:  # Outcome column
                     val = str(cell.value)
                     if val in self.outcome_styles:
                         style = self.outcome_styles[val]
                         cell.font = style["font"]
                         cell.fill = style["fill"]
 
-        # Adjust column widths
-        for col_idx in range(1, 5):
+        # Adjust column widths (except link column)
+        for col_idx in range(1, 6):
+            if col_idx == 4:  # Skip "LINK"
+                ws.column_dimensions[get_column_letter(col_idx)].width = 12
+                continue
+
             max_length = len(self.COLUMNS[col_idx - 1])
             for r in range(2, last_row + 1):
                 val = ws.cell(row=r, column=col_idx).value
@@ -89,6 +95,7 @@ class JobApplicationManager:
     def add_job(self):
         position = input("\nEnter position title: ")
         company = input("Enter company name: ")
+        city = input("Enter city: ")
         link = input("Enter application link: ")
         formatted_link = f'=HYPERLINK("{link}", "Here")'
 
@@ -96,8 +103,9 @@ class JobApplicationManager:
         row = ws.max_row + 1
         ws.cell(row=row, column=1, value=position)
         ws.cell(row=row, column=2, value=company)
-        ws.cell(row=row, column=3, value=formatted_link)
-        ws.cell(row=row, column=4, value="Waiting")
+        ws.cell(row=row, column=3, value=city)
+        ws.cell(row=row, column=4, value=formatted_link)
+        ws.cell(row=row, column=5, value="Waiting")
 
         self.sort_by_company(ws)
         self.apply_formatting(ws)
@@ -106,7 +114,7 @@ class JobApplicationManager:
 
     def list_jobs(self):
         wb, ws = self.load_ws()
-        jobs = [(row[0], row[1], row[3]) for row in ws.iter_rows(min_row=2, max_col=4, values_only=True)]
+        jobs = [(row[0], row[1], row[2], row[4]) for row in ws.iter_rows(min_row=2, max_col=5, values_only=True)]
         return jobs
 
     def edit_outcome(self):
@@ -116,8 +124,8 @@ class JobApplicationManager:
             return
 
         print("\n📋 Job Applications:")
-        for i, (position, company, outcome) in enumerate(jobs, start=1):
-            print(f"[{i}] {company} - {position} - [{outcome}]")
+        for i, (position, company, city, outcome) in enumerate(jobs, start=1):
+            print(f"[{i}] {company} - {position} ({city}) - [{outcome}]")
 
         try:
             choice = int(input("Select job number to update: "))
@@ -142,7 +150,7 @@ class JobApplicationManager:
             return
 
         wb, ws = self.load_ws()
-        ws.cell(row=choice + 1, column=4, value=outcome)
+        ws.cell(row=choice + 1, column=5, value=outcome)
 
         self.sort_by_company(ws)
         self.apply_formatting(ws)
@@ -156,8 +164,8 @@ class JobApplicationManager:
             return
 
         print("\n📋 Job Applications:")
-        for i, (position, company, outcome) in enumerate(jobs, start=1):
-            print(f"[{i}] {company} - {position} - {outcome}")
+        for i, (position, company, city, outcome) in enumerate(jobs, start=1):
+            print(f"[{i}] {company} - {position} ({city}) - {outcome}")
         input("Press Enter to return to the main menu...\n")
 
     def main_menu(self):
